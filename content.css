@@ -6027,7 +6027,7 @@ body {
   }
 }
 .responsive-div {
-    background-color: #000;
+    background-color: #fff;
     padding: 20px;
     margin: 10px auto;
     max-width: 90%; /* El div ocupa hasta el 90% del ancho del contenedor */
