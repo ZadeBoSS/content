@@ -1,0 +1,140 @@
+#infografia_1 {
+  font-family: 'MontSerrat';
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+
+  .container {
+    width: 30vw;
+    height: 30vw;
+    background-color: #e19235b0;
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .center .core-value {
+    background-color: #bbd9a0b0;
+    border-radius: 50%;
+    width: 10vw;
+    height: 10vw;
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75em;
+    color: #000;
+    box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.3);
+  }
+
+  .center .core-value::before {
+    content: '\1F4A1';
+    /* Unicode para emoji de bombilla */
+    font-size: 3em;
+  }
+
+  .section {
+    position: absolute;
+    width: 11vw;
+    height: 11vw;
+    background-color: #255541b0;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    color: #fff;
+    font-size: 0.8em;
+    padding: 10px;
+  }
+
+  .section img {
+
+    margin-bottom: 10px;
+  }
+
+  .section h3 {
+    margin: 0;
+    font-size: 0.8em;
+    color: #fce65f;
+  }
+
+  .section p {
+    font-size: 12px;
+    margin: 5px 0 0 0;
+    color: #dcdcdc;
+  }
+
+  /* Posiciones de las secciones */
+  .top {
+    top: -14%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .bottom {
+    bottom: -14%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .left {
+    left: -14%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .right {
+    right: -14%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  /* Estilo de los iconos */
+  .icon {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: #fce65f;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #3b3b9a;
+  }
+
+  /* Posición de los iconos */
+  .icon-top {
+    top: 40%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .icon-bottom {
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .icon-left {
+    left: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .icon-right {
+    right: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
