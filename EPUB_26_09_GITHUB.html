@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reproductor EPUB Interactivo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
+      #viewer {
+        flex-grow: 1;
+        position: relative;
+        width: 100vw;
+        height: 98vh;
+      }
+      #controls {
+        display: flex;
+        align-items: center;
+        padding: 12px 1%;
+        position: fixed;
+        bottom: 0;
+        z-index: 300;
+        transition: background-color 0.3s;
+      }
+      #controls button, #controls .file-btn {
+        padding: 0.6rem;
+        margin: 0.3rem;
+        border: none;
+        border-radius: 8px;
+        background-color: #255541;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+        font-size: 0.6rem;
+      }
+      #controls button:hover, #controls .file-btn:hover {
+        background-color: #2f8e67;
+        transform: scale(1.05);
+      }
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        font-weight: bold;
+        color: #0078d4;
+        display: none;
+      }
+      .nav-button {
+        position: fixed;
+        bottom: 5%;
+        transform: translateY(-50%);
+        background-color: #255541;
+        color: white;
+        border: none;
+        padding: 12px;
+        font-size: 1.4rem;
+        cursor: pointer;
+        border-radius: 20%;
+        transition: background-color 0.3s, transform 0.2s;
+        z-index: 301;
+      }
+      .nav-button:hover { background: #2f8e67; }
+      #prev-button { left: 5px; }
+      #next-button { right: 5px; }
+      @media (max-width: 768px) {
+        #controls { background: transparent; padding: 10px; margin: 0; }
+        .nav-button { padding: 5px; font-size: 0.7rem; }
+      }
+  </style>
+</head>
+
+<body>
+
+  <div id="epub-container">
+    <div id="viewer">
+      <div id="loading">Cargando...</div>
+    </div>
+    <div id="controls"></div>
+    <button id="prev-button" class="nav-button" title="Página Anterior" onclick="navigate(-1)">◀</button>
+    <button id="next-button" class="nav-button" title="Página Siguiente" onclick="navigate(1)">▶</button>
+  </div>
+
+  <script>
+    let currentBook, currentRendition;
+    let horizontalEpub, verticalEpub;
+    let currentCfi = null;  // Obtener numero de la pagina en la que estamos, para cargar epub por la misma pagina
+
+    async function fetchEpubFromGitHub(epubName) {
+      const response = await fetch(`https://api.github.com/repos/ZadeBoSS/content/contents/${epubName}`);
+      const data = await response.json();
+      const epubUrl = data.download_url;
+      const epubResponse = await fetch(epubUrl);
+      return epubResponse.blob();
+    }
+
+    async function loadEpubFromGitHub() {
+      document.getElementById('loading').style.display = 'block';
+
+      if (!horizontalEpub) horizontalEpub = await fetchEpubFromGitHub('HORIZONTAL.epub');
+      if (!verticalEpub) verticalEpub = await fetchEpubFromGitHub('VERTICAL.epub');
+
+      const epubFile = (window.innerWidth / window.innerHeight) > 0.75 ? horizontalEpub : verticalEpub;
+
+      if (currentBook) {
+        currentCfi = currentRendition.location.start.cfi;
+        currentBook.destroy();
+      }
+
+      currentBook = ePub(epubFile);
+      currentRendition = currentBook.renderTo("viewer", {
+        width: "100%",
+        height: "100%",
+        spread: "always",
+        allowScriptedContent: true
+      });
+
+      currentRendition.hooks.content.register(contents => {
+        const iframe = contents.documentElement.querySelector('iframe');
+        if (iframe) {
+          iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+        }
+      });
+
+      currentCfi ? currentRendition.display(currentCfi) : currentRendition.display();
+      currentRendition.on('locationChanged', location => {
+        currentCfi = location.start.cfi;
+      });
+
+      extractAspectRatio(epubFile);
+    }
+
+    function extractAspectRatio(epubFile) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        JSZip.loadAsync(e.target.result).then(zip => {
+          zip.forEach((relativePath, zipEntry) => {
+            if (zipEntry.name.endsWith('.xhtml')) {
+              zipEntry.async("string").then(content => {
+                const style = new DOMParser().parseFromString(content, "application/xhtml+xml").querySelector('body')?.getAttribute('style');
+                if (style) {
+                  const [widthMatch, heightMatch] = [style.match(/width:\s*(\d+)px/), style.match(/height:\s*(\d+)px/)];
+                  if (widthMatch && heightMatch) {
+                    const aspectRatio = (parseInt(widthMatch[1]) / parseInt(heightMatch[1])).toFixed(2);
+                    adjustViewerSize(aspectRatio);
+                  }
+                }
+              });
+            }
+          });
+        });
+      };
+      reader.readAsArrayBuffer(epubFile);
+    }
+
+    function adjustViewerSize(aspectRatio) {
+      const viewer = document.getElementById('viewer');
+      const { innerWidth: viewportWidth, innerHeight: viewportHeight } = window;
+
+      let newWidth, newHeight;
+      const currentAspectRatio = viewer.clientWidth / viewer.clientHeight;
+
+      if (aspectRatio > viewportWidth / viewportHeight) {
+        newWidth = viewportWidth;
+        newHeight = newWidth / aspectRatio;
+      } else {
+        newHeight = viewportHeight;
+        newWidth = newHeight * aspectRatio;
+      }
+
+      viewer.style.width = `${newWidth}px`;
+      viewer.style.height = `${newHeight}px`;
+      viewer.style.margin = `${(viewportHeight - newHeight) / 2}px auto`;
+    }
+
+    function navigate(direction) {
+      if (currentRendition) {
+        direction === -1 ? currentRendition.prev() : currentRendition.next();
+      }
+    }
+
+    window.addEventListener('resize', loadEpubFromGitHub);
+    window.addEventListener('load', loadEpubFromGitHub);
+  </script>
+</body>
+</html>
